@@ -482,7 +482,7 @@ function weeklySection(data: RpsData) {
     ...data.weeks.map(
       (w) =>
         new TableRow({
-          cantSplit: true,
+          cantSplit: false,
           children: [
             cell(w.minggu, { align: AlignmentType.CENTER, size: 16 }),
             cell(w.subCpmk, { size: 16 }),
@@ -525,7 +525,7 @@ function weeklySection(data: RpsData) {
 
 function tasksSection(data: RpsData) {
   currentWidth = PORTRAIT_WIDTH;
-  const widths = [900, 2600, 2900, 3500, 2400, 1658];
+  const widths = [1150, 2400, 2850, 3400, 2350, 1808];
   return [
     ...kop(data),
     para("B. RENCANANA TUGAS MAHASISWA", { bold: true, size: 22 }),
