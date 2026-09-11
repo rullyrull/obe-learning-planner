@@ -16,3 +16,5 @@
 - [x] Samakan susunan tabel & warna dengan template PDF SBSD25214 (pratinjau, PDF, Word)
 
 - [x] Periksa & samakan halaman lanjutan (Bagian A, mingguan, B, C, D) dengan template
+
+- [x] Verifikasi visual hasil Word (kover, Bagian A/mingguan, B, C, D, rubrik) + rapikan mingguan agar tidak 1 minggu per halaman
