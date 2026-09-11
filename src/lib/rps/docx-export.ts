@@ -29,6 +29,7 @@ import unblLogo from "@/assets/unbl-logo.png.asset.json";
 const FONT = "Times New Roman";
 const LANDSCAPE_WIDTH = 13958;
 const PORTRAIT_WIDTH = 9906;
+void PORTRAIT_WIDTH;
 // Lebar konten halaman yang sedang dibangun (portrait untuk bagian A/B/C/D,
 // landscape hanya untuk tabel rencana mingguan seperti template UNBL).
 let currentWidth = LANDSCAPE_WIDTH;
