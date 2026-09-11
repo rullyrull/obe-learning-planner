@@ -1,0 +1,849 @@
+import {
+  AlignmentType,
+  BorderStyle,
+  Document,
+  HeadingLevel,
+  ImageRun,
+  Packer,
+  PageOrientation,
+  Paragraph,
+  ShadingType,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  VerticalAlign,
+  WidthType,
+} from "docx";
+import type { RpsData } from "./types";
+import { matrixKey } from "./types";
+import {
+  BENTUK_METODE_GROUPS,
+  MEDIA_GROUPS,
+  PENILAIAN_GROUPS,
+  resolveChecklist,
+} from "./checklist";
+import type { ChecklistGroup } from "./checklist";
+import unblLogo from "@/assets/unbl-logo.png.asset.json";
+
+const FONT = "Times New Roman";
+const LANDSCAPE_WIDTH = 13958;
+const PORTRAIT_WIDTH = 9906;
+// Lebar konten halaman yang sedang dibangun (portrait untuk bagian A/B/C/D,
+// landscape hanya untuk tabel rencana mingguan seperti template UNBL).
+let currentWidth = PORTRAIT_WIDTH;
+
+const border = { style: BorderStyle.SINGLE, size: 6, color: "000000" };
+const borders = { top: border, bottom: border, left: border, right: border };
+
+type CellOpts = {
+  bold?: boolean;
+  width?: number;
+  span?: number;
+  rowSpan?: number;
+  align?: (typeof AlignmentType)[keyof typeof AlignmentType];
+  shade?: boolean;
+  size?: number;
+};
+
+const lines = (text: string, opts: CellOpts) =>
+  String(text ?? "")
+    .split("\n")
+    .map(
+      (line) =>
+        new Paragraph({
+          alignment: opts.align ?? AlignmentType.LEFT,
+          spacing: { before: 20, after: 20 },
+          children: [
+            new TextRun({ text: line, bold: opts.bold ?? false, font: FONT, size: opts.size ?? 18 }),
+          ],
+        }),
+    );
+
+const cell = (text: string, opts: CellOpts = {}) =>
+  new TableCell({
+    borders,
+    ...(opts.span ? { columnSpan: opts.span } : {}),
+    ...(opts.rowSpan ? { rowSpan: opts.rowSpan } : {}),
+
+    verticalAlign: VerticalAlign.CENTER,
+    margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    ...(opts.width ? { width: { size: opts.width, type: WidthType.DXA } } : {}),
+    ...(opts.shade
+      ? { shading: { fill: "E2F0D9", type: ShadingType.CLEAR, color: "auto" } }
+      : {}),
+    children: lines(text, opts),
+  });
+
+const head = (text: string, opts: CellOpts = {}) =>
+  cell(text, { ...opts, bold: true, shade: true });
+
+/**
+ * Sel daftar centang berkotak seperti template UNBL: setiap opsi berada pada
+ * baris berkotak dengan kolom kecil di kiri untuk tanda centang.
+ */
+const checklistCell = (groups: ChecklistGroup[], text: string, innerWidth: number) => {
+  const checkW = 300;
+  const labelW = Math.max(600, innerWidth - checkW);
+  const miniPara = (t: string, bold = false, align: CellOpts["align"] = AlignmentType.LEFT) =>
+    new Paragraph({
+      alignment: align,
+      spacing: { before: 0, after: 0 },
+      children: [new TextRun({ text: t, bold, font: FONT, size: 15 })],
+    });
+  const rows: TableRow[] = [];
+  for (const g of resolveChecklist(groups, text)) {
+    if (g.title) {
+      rows.push(
+        new TableRow({
+          children: [
+            new TableCell({
+              borders,
+              columnSpan: 2,
+              margins: { top: 20, bottom: 20, left: 40, right: 40 },
+              children: [miniPara(g.title, true, AlignmentType.CENTER)],
+            }),
+          ],
+        }),
+      );
+    }
+    for (const opt of g.options) {
+      rows.push(
+        new TableRow({
+          cantSplit: true,
+          children: [
+            new TableCell({
+              borders,
+              width: { size: checkW, type: WidthType.DXA },
+              margins: { top: 20, bottom: 20, left: 20, right: 20 },
+              children: [miniPara(opt.checked ? "\u2713" : "", false, AlignmentType.CENTER)],
+            }),
+            new TableCell({
+              borders,
+              width: { size: labelW, type: WidthType.DXA },
+              margins: { top: 20, bottom: 20, left: 40, right: 40 },
+              children: [miniPara(opt.label)],
+            }),
+          ],
+        }),
+      );
+    }
+  }
+  return new TableCell({
+    borders,
+    verticalAlign: VerticalAlign.TOP,
+    margins: { top: 40, bottom: 40, left: 40, right: 40 },
+    children: [
+      new Table({
+        width: { size: checkW + labelW, type: WidthType.DXA },
+        columnWidths: [checkW, labelW],
+        rows,
+      }),
+    ],
+  });
+};
+
+const table = (rows: TableRow[], columnWidths: number[], stretch = true) => {
+  const sum = columnWidths.reduce((a, b) => a + b, 0) || 1;
+  const scaled = stretch
+    ? columnWidths.map((w) => Math.max(400, Math.floor((w / sum) * currentWidth)))
+    : columnWidths;
+  return new Table({
+    width: { size: scaled.reduce((a, b) => a + b, 0), type: WidthType.DXA },
+    columnWidths: scaled,
+    rows,
+  });
+};
+
+const para = (
+  text: string,
+  opts: { bold?: boolean; size?: number; align?: CellOpts["align"]; spacing?: number } = {},
+) =>
+  new Paragraph({
+    alignment: opts.align ?? AlignmentType.LEFT,
+    spacing: { before: opts.spacing ?? 80, after: opts.spacing ?? 80 },
+    children: [
+      new TextRun({ text, bold: opts.bold ?? false, font: FONT, size: opts.size ?? 20 }),
+    ],
+  });
+
+const spacer = () => new Paragraph({ children: [new TextRun({ text: "", font: FONT })] });
+
+const dataUrlToBytes = (dataUrl: string): { data: Uint8Array; type: "png" | "jpg" } | null => {
+  const match = /^data:image\/(png|jpe?g);base64,(.+)$/i.exec(dataUrl.trim());
+  if (!match || !match[1] || !match[2]) return null;
+  const binary = atob(match[2]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return { data: bytes, type: match[1].toLowerCase().startsWith("png") ? "png" : "jpg" };
+};
+
+const logoParagraph = (data: RpsData, size: number) => {
+  const img = dataUrlToBytes(data.identity.logoDataUrl || "");
+  if (!img) return null;
+  return new Paragraph({
+    alignment: AlignmentType.CENTER,
+    children: [
+      new ImageRun({
+        type: img.type,
+        data: img.data,
+        transformation: { width: size, height: size },
+        altText: { title: "Logo", description: "Logo institusi", name: "logo" },
+      }),
+    ],
+  });
+};
+
+/**
+ * Kop institusi seperti template: satu tabel bergaris dengan logo di kolom kiri
+ * (menyatu 3 baris) dan tiga baris nama fakultas/prodi/universitas di kanan.
+ */
+const kop = (data: RpsData): Array<Paragraph | Table> => {
+  const logo = logoParagraph(data, 64);
+  const logoW = 1200;
+  const textW = Math.max(2000, currentWidth - logoW);
+  const line = (t: string) =>
+    new TableCell({
+      borders,
+      width: { size: textW, type: WidthType.DXA },
+      verticalAlign: VerticalAlign.CENTER,
+      margins: { top: 30, bottom: 30, left: 100, right: 60 },
+      children: [
+        new Paragraph({
+          spacing: { before: 0, after: 0 },
+          children: [new TextRun({ text: t, bold: true, font: FONT, size: 21 })],
+        }),
+      ],
+    });
+  const logoCell = new TableCell({
+    borders,
+    rowSpan: 3,
+    width: { size: logoW, type: WidthType.DXA },
+    verticalAlign: VerticalAlign.CENTER,
+    margins: { top: 40, bottom: 40, left: 40, right: 40 },
+    children: [logo ?? new Paragraph({ children: [new TextRun({ text: "", font: FONT })] })],
+  });
+  return [
+    new Table({
+      width: { size: logoW + textW, type: WidthType.DXA },
+      columnWidths: [logoW, textW],
+      rows: [
+        new TableRow({ children: [logoCell, line(data.identity.fakultas)] }),
+        new TableRow({ children: [line(data.identity.prodi)] }),
+        new TableRow({ children: [line(data.identity.universitas)] }),
+      ],
+    }),
+  ];
+};
+
+const check = (on: boolean) => (on ? "\u2713" : "");
+
+function sectionACore(data: RpsData) {
+  currentWidth = PORTRAIT_WIDTH;
+  const { identity } = data;
+  const w = PORTRAIT_WIDTH;
+  const six = Array.from({ length: 6 }, () => Math.floor(w / 6));
+  const children: Array<Paragraph | Table> = [...kop(data)];
+
+  children.push(
+    table(
+      [
+        new TableRow({
+          children: [head("A. RENCANANA PEMBELAJARAN SEMESTER", { span: 6, width: w })],
+        }),
+        new TableRow({
+          children: [
+            head("Kode MK"),
+            head("Nama Mata Kuliah (MK)"),
+            head("Rumpun MK"),
+            head("Bobot (SKS)"),
+            head("Semester"),
+            head("Tanggal Penyusunan"),
+          ],
+        }),
+        new TableRow({
+          children: [
+            cell(identity.kodeMK, { align: AlignmentType.CENTER }),
+            cell(identity.namaMK),
+            cell(identity.rumpunMK, { align: AlignmentType.CENTER }),
+            cell(identity.bobotSKS, { align: AlignmentType.CENTER }),
+            cell(identity.semester, { align: AlignmentType.CENTER }),
+            cell(identity.tanggalPenyusunan, { align: AlignmentType.CENTER }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            head("Otorisasi"),
+            head("Pengembang RPS", { span: 2 }),
+            head("Koordinator MK"),
+            head("Ketua Program Studi", { span: 2 }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            cell(""),
+            cell(identity.pengembangRPS, { span: 2, align: AlignmentType.CENTER }),
+            cell(identity.koordinatorMK, { align: AlignmentType.CENTER }),
+            cell(identity.kaprodi, { span: 2, align: AlignmentType.CENTER }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            head("Capaian Pembelajaran Lulusan (CPL) Prodi yang Dibebankan Pada MK"),
+            head("CPL yang dibebankan pada MK :", { span: 5 }),
+          ],
+        }),
+        ...data.cpl.map(
+          (c) =>
+            new TableRow({
+              children: [cell(c.kode, { bold: true }), cell(c.deskripsi, { span: 5 })],
+            }),
+        ),
+        new TableRow({
+          children: [
+            head("Capaian Pembelajaran Mata Kuliah (CPMK)"),
+            head(
+              "CPL dijabarkan pada CPMK berikut, yaitu setelah menyelesaikan pembelajaran mata kuliah.",
+              { span: 5 },
+            ),
+          ],
+        }),
+        ...data.cpmk.map(
+          (c) =>
+            new TableRow({
+              children: [cell(c.kode, { bold: true }), cell(c.deskripsi, { span: 5 })],
+            }),
+        ),
+      ],
+      six,
+    ),
+    spacer(),
+  );
+
+  const matrixWidths = (label: number) => {
+    const rest = Math.floor((LANDSCAPE_WIDTH - label) / Math.max(data.cpmk.length, 1));
+    return [label, ...data.cpmk.map(() => rest)];
+  };
+
+  const matrixTable = (title: string, rows: Array<{ kode: string }>, src: RpsData["cplCpmk"]) =>
+    table(
+      [
+        new TableRow({
+          children: [head(title), ...data.cpmk.map((c) => head(c.kode, { align: AlignmentType.CENTER }))],
+        }),
+        ...rows.map(
+          (r) =>
+            new TableRow({
+              children: [
+                cell(r.kode, { bold: true }),
+                ...data.cpmk.map((c) =>
+                  cell(check(!!src[matrixKey(r.kode, c.kode)]), {
+                    align: AlignmentType.CENTER,
+                  }),
+                ),
+              ],
+            }),
+        ),
+      ],
+      matrixWidths(3200),
+    );
+
+  children.push(matrixTable("Pemetaan CPL dengan CPMK", data.cpl, data.cplCpmk), spacer());
+
+  children.push(
+    table(
+      [
+        new TableRow({
+          children: [
+            head("Sub-CPMK — Kemampuan Akhir Tiap Tahapan Belajar MK", { span: 2 }),
+          ],
+        }),
+        ...data.subCpmk.map(
+          (s) =>
+            new TableRow({
+              children: [cell(s.kode, { bold: true }), cell(s.deskripsi)],
+            }),
+        ),
+      ],
+      [2200, LANDSCAPE_WIDTH - 2200],
+    ),
+    spacer(),
+    matrixTable("Korelasi CPMK terhadap Sub-CPMK", data.subCpmk, data.subCpmkCpmk),
+    spacer(),
+    table(
+      [
+        new TableRow({
+          children: [
+            head("Metode Penilaian dan Kaitannya dengan CPMK"),
+            ...data.cpmk.map((c) => head(c.kode, { align: AlignmentType.CENTER })),
+          ],
+        }),
+        ...data.metodePenilaian.map(
+          (m) =>
+            new TableRow({
+              children: [
+                cell(m),
+                ...data.cpmk.map((c) =>
+                  cell(check(!!data.metodeCpmk[matrixKey(m, c.kode)]), {
+                    align: AlignmentType.CENTER,
+                  }),
+                ),
+              ],
+            }),
+        ),
+      ],
+      matrixWidths(3600),
+    ),
+    spacer(),
+  );
+
+  const pustakaText = (
+    [
+      ["Utama (U):", data.pustaka.utama, "U"],
+      ["Pendukung (P):", data.pustaka.pendukung, "P"],
+      ["Pengintegrasian Hasil Penelitian (R):", data.pustaka.penelitian, "R"],
+      ["Pengintegrasian Hasil Pengabdian Kepada Masyarakat (C):", data.pustaka.pkm, "C"],
+    ] as Array<[string, string[], string]>
+  )
+    .map(([label, items, prefix]) =>
+      [label, ...items.filter((i) => i.trim()).map((i, idx) => `${prefix}${idx + 1}. ${i}`)].join(
+        "\n",
+      ),
+    )
+    .join("\n");
+
+  children.push(
+    table(
+      [
+        new TableRow({
+          children: [head("Deskripsi Singkat Mata Kuliah"), cell(data.deskripsi)],
+        }),
+        new TableRow({
+          children: [
+            head("Bahan Kajian / Materi Pembelajaran"),
+            cell(data.bahanKajian.map((b, i) => `${i + 1}. ${b}`).join("\n")),
+          ],
+        }),
+        new TableRow({ children: [head("Pustaka"), cell(pustakaText)] }),
+        new TableRow({ children: [head("Dosen Pengampu"), cell(data.dosenPengampu)] }),
+        new TableRow({ children: [head("Mata Kuliah Prasyarat"), cell(data.prasyarat)] }),
+      ],
+      [2800, LANDSCAPE_WIDTH - 2800],
+    ),
+  );
+
+  return children;
+}
+
+function weeklySection(data: RpsData) {
+  currentWidth = LANDSCAPE_WIDTH;
+  const widths = [800, 1750, 1250, 1550, 900, 1300, 1150, 1350, 600, 1650, 1158];
+  const sum = widths.reduce((a, b) => a + b, 0);
+  const dxa = (i: number) => Math.floor(((widths[i] ?? 0) / sum) * LANDSCAPE_WIDTH);
+  const rows: TableRow[] = [
+    new TableRow({
+      tableHeader: true,
+      children: [
+        head("Minggu Ke-", { align: AlignmentType.CENTER, size: 16, rowSpan: 2 }),
+        head("Sub-CPMK (Kemampuan Akhir yang Direncanakan)", {
+          size: 16,
+          align: AlignmentType.CENTER,
+          rowSpan: 2,
+        }),
+        head("Bahan Kajian", { size: 16, align: AlignmentType.CENTER, rowSpan: 2 }),
+        head("Bentuk dan Metode Pembelajaran", {
+          size: 16,
+          align: AlignmentType.CENTER,
+          rowSpan: 2,
+        }),
+        head("Estimasi Waktu Pembelajaran (mnt/mg/smt)", {
+          size: 16,
+          align: AlignmentType.CENTER,
+          rowSpan: 2,
+        }),
+        head("Pengalaman Belajar Mahasiswa", {
+          size: 16,
+          align: AlignmentType.CENTER,
+          rowSpan: 2,
+        }),
+        head("Media Pembelajaran", { size: 16, align: AlignmentType.CENTER, rowSpan: 2 }),
+        head("Penilaian", { size: 16, align: AlignmentType.CENTER, span: 3 }),
+        head("Pustaka", { size: 16, align: AlignmentType.CENTER, rowSpan: 2 }),
+      ],
+    }),
+    new TableRow({
+      tableHeader: true,
+      children: [
+        head("Indikator", { size: 16, align: AlignmentType.CENTER }),
+        head("Bobot", { size: 16, align: AlignmentType.CENTER }),
+        head("Teknik & Kriteria", { size: 16, align: AlignmentType.CENTER }),
+      ],
+    }),
+    ...data.weeks.map(
+      (w) =>
+        new TableRow({
+          cantSplit: true,
+          children: [
+            cell(w.minggu, { align: AlignmentType.CENTER, size: 16 }),
+            cell(w.subCpmk, { size: 16 }),
+            cell(w.bahanKajian, { size: 16 }),
+            checklistCell(BENTUK_METODE_GROUPS, w.bentukMetode, dxa(3) - 120),
+            cell(w.estimasiWaktu, { align: AlignmentType.CENTER, size: 16 }),
+            cell(w.pengalamanBelajar, { size: 16 }),
+            checklistCell(MEDIA_GROUPS, w.media, dxa(6) - 120),
+            cell(w.indikator, { size: 16 }),
+            cell(w.bobot ? `${w.bobot}%` : "", { align: AlignmentType.CENTER, size: 16 }),
+            checklistCell(PENILAIAN_GROUPS, w.teknikKriteria, dxa(9) - 120),
+            cell(w.pustaka, { size: 16 }),
+          ],
+        }),
+    ),
+  ];
+  const total = data.weeks.reduce((s, w) => s + (parseFloat(w.bobot) || 0), 0);
+  rows.push(
+    new TableRow({
+      children: [
+        cell("Total Bobot", { span: 8, bold: true, align: AlignmentType.RIGHT, size: 16 }),
+        cell(`${total}%`, { bold: true, align: AlignmentType.CENTER, size: 16 }),
+        cell("", { span: 2, size: 16 }),
+      ],
+    }),
+  );
+  rows.unshift(
+    new TableRow({
+      children: [
+        head("A. RENCANANA PEMBELAJARAN SEMESTER", {
+          span: 11,
+          align: AlignmentType.CENTER,
+          size: 22,
+        }),
+      ],
+    }),
+  );
+  return [...kop(data), table(rows, widths)];
+}
+
+function tasksSection(data: RpsData) {
+  currentWidth = PORTRAIT_WIDTH;
+  const widths = [900, 2600, 2900, 3500, 2400, 1658];
+  return [
+    ...kop(data),
+    para("B. RENCANANA TUGAS MAHASISWA", { bold: true, size: 22 }),
+    table(
+      [
+        new TableRow({
+          tableHeader: true,
+          children: [
+            head("Minggu ke-", { align: AlignmentType.CENTER, size: 16 }),
+            head("Nama Tugas dan Evaluasi", { size: 16 }),
+            head("Kemampuan yang Diukur (Sub-CPMK)", { size: 16 }),
+            head("Bentuk Penugasan / Cara Pengerjaan", { size: 16 }),
+            head("Luaran Tugas yang Dihasilkan", { size: 16 }),
+            head("Batas Waktu", { size: 16 }),
+          ],
+        }),
+        ...data.tasks.map(
+          (t) =>
+            new TableRow({
+              children: [
+                cell(t.minggu, { align: AlignmentType.CENTER, size: 16 }),
+                cell(t.namaTugas, { size: 16 }),
+                cell(t.kemampuan, { size: 16 }),
+                cell(t.bentuk, { size: 16 }),
+                cell(t.luaran, { size: 16 }),
+                cell(t.batasWaktu, { size: 16 }),
+              ],
+            }),
+        ),
+      ],
+      widths,
+    ),
+  ];
+}
+
+function finalAssessmentSection(data: RpsData) {
+  currentWidth = PORTRAIT_WIDTH;
+  const children: Array<Paragraph | Table> = [
+    ...kop(data),
+    para("C. PENILAIAN AKHIR", { bold: true, size: 22 }),
+    para("1. Persentase penilaian mata kuliah mahasiswa mengacu pada CPMK sebagai berikut:"),
+  ];
+
+  for (const v of data.variants) {
+    const total = v.rows.reduce((s, r) => s + (parseFloat(r.persentase) || 0), 0);
+    children.push(
+      para(v.judul),
+      table(
+        [
+          new TableRow({
+            children: [
+              head("No.", { align: AlignmentType.CENTER }),
+              head("Elemen Penilaian"),
+              head("Rencana Penilaian"),
+              head("Persentase", { align: AlignmentType.CENTER }),
+            ],
+          }),
+          ...v.rows.map(
+            (r, i) =>
+              new TableRow({
+                children: [
+                  cell(String(i + 1), { align: AlignmentType.CENTER }),
+                  cell(r.elemen),
+                  cell(r.rencana),
+                  cell(r.persentase, { align: AlignmentType.CENTER }),
+                ],
+              }),
+          ),
+          new TableRow({
+            children: [
+              cell("Total Nilai", { span: 3, bold: true }),
+              cell(String(total), { bold: true, align: AlignmentType.CENTER }),
+            ],
+          }),
+        ],
+        [700, 3400, 3400, 1526],
+      ),
+      spacer(),
+    );
+  }
+
+  for (const note of data.variantNotes) children.push(para(note, { size: 18 }));
+
+  const totalAch = data.achievements.reduce((s, a) => s + (parseFloat(a.bobot) || 0), 0);
+  children.push(
+    para("2. Ketercapaian CPL pada CPMK:"),
+    table(
+      [
+        new TableRow({
+          tableHeader: true,
+          children: [
+            head("Minggu", { align: AlignmentType.CENTER, size: 16 }),
+            head("CPL", { size: 16 }),
+            head("CPMK", { size: 16 }),
+            head("Indikator Penilaian", { size: 16 }),
+            head("Bentuk Penilaian", { size: 16 }),
+            head("Bobot Nilai (%)", { align: AlignmentType.CENTER, size: 16 }),
+            head("Nilai Mahasiswa", { size: 16 }),
+            head("Ketercapaian CPL pada CPMK", { size: 16 }),
+          ],
+        }),
+        ...data.achievements.map(
+          (a) =>
+            new TableRow({
+              children: [
+                cell(a.minggu, { align: AlignmentType.CENTER, size: 16 }),
+                cell(a.cpl, { size: 16 }),
+                cell(a.cpmk, { size: 16 }),
+                cell(a.indikator, { size: 16 }),
+                cell(a.bentuk, { size: 16 }),
+                cell(a.bobot, { align: AlignmentType.CENTER, size: 16 }),
+                cell(a.nilai, { size: 16 }),
+                cell(a.ketercapaian, { align: AlignmentType.CENTER, size: 16 }),
+              ],
+            }),
+        ),
+        new TableRow({
+          children: [
+            cell("Total", { span: 5, bold: true, align: AlignmentType.RIGHT, size: 16 }),
+            cell(String(totalAch), { bold: true, align: AlignmentType.CENTER, size: 16 }),
+            cell("", { size: 16 }),
+            cell("", { size: 16 }),
+          ],
+        }),
+      ],
+      [700, 900, 900, 2400, 1300, 800, 900, 1126],
+    ),
+    spacer(),
+    para("Nilai Mata Kuliah (NM)", { bold: true }),
+    table(
+      [
+        new TableRow({
+          children: [
+            head("Rentang", { align: AlignmentType.CENTER }),
+            head("Kategori", { align: AlignmentType.CENTER }),
+          ],
+        }),
+        ...data.gradeScale.map(
+          (g) =>
+            new TableRow({
+              children: [
+                cell(g.rentang, { align: AlignmentType.CENTER }),
+                cell(g.kategori, { align: AlignmentType.CENTER }),
+              ],
+            }),
+        ),
+      ],
+      [2500, 2500],
+      false,
+    ),
+  );
+
+  return children;
+}
+
+function rubricSection(data: RpsData) {
+  currentWidth = PORTRAIT_WIDTH;
+  const rows: TableRow[] = [
+    new TableRow({
+      tableHeader: true,
+      children: [
+        head("No.", { align: AlignmentType.CENTER, size: 16 }),
+        head("Aspek", { size: 16 }),
+        head("Definisi", { size: 16 }),
+        head("Indikator", { size: 16 }),
+        head("Sub-Indikator", { size: 16 }),
+        head("Rentang Nilai", { align: AlignmentType.CENTER, size: 16 }),
+      ],
+    }),
+  ];
+  data.rubric.forEach((r, i) => {
+    r.subIndikator.forEach((s, j) => {
+      rows.push(
+        new TableRow({
+          children:
+            j === 0
+              ? [
+                  cell(String(i + 1), {
+                    align: AlignmentType.CENTER,
+                    rowSpan: r.subIndikator.length,
+                    size: 16,
+                  }),
+                  cell(r.aspek, { rowSpan: r.subIndikator.length, size: 16 }),
+                  cell(r.definisi, { rowSpan: r.subIndikator.length, size: 16 }),
+                  cell(r.indikator, { rowSpan: r.subIndikator.length, size: 16 }),
+                  cell(s.deskripsi, { size: 16 }),
+                  cell(s.rentang, { align: AlignmentType.CENTER, size: 16 }),
+                ]
+              : [
+                  cell(s.deskripsi, { size: 16 }),
+                  cell(s.rentang, { align: AlignmentType.CENTER, size: 16 }),
+                ],
+        }),
+      );
+    });
+  });
+
+  return [
+    ...kop(data),
+    para("D. PENILAIAN TUGAS", { bold: true, size: 22 }),
+    para(data.rubricTitle, { bold: true }),
+    table(rows, [600, 1500, 2000, 1800, 2200, 926]),
+    spacer(),
+    para("Keterangan :", { bold: true }),
+    ...data.rubricNotes.map((n) => para(n, { size: 18, spacing: 20 })),
+  ];
+}
+
+const A4 = { width: 11906, height: 16838 };
+const MARGIN = { top: 1000, right: 1000, bottom: 1000, left: 1000 };
+
+export async function buildRpsDocx(data: RpsData): Promise<Blob> {
+  let effectiveData = data;
+  if (!data.identity.logoDataUrl) {
+    const response = await fetch(unblLogo.url);
+    const blob = await response.blob();
+    const logoDataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+    effectiveData = { ...data, identity: { ...data.identity, logoDataUrl } };
+  }
+  const coverLogo = logoParagraph(effectiveData, 140);
+  const coverYear = effectiveData.identity.tanggalPenyusunan.match(/\d{4}/)?.[0] ?? "";
+
+  const doc = new Document({
+    styles: { default: { document: { run: { font: FONT, size: 20 } } } },
+    sections: [
+      {
+        properties: { page: { size: A4, margin: MARGIN } },
+        children: [
+          para(`RPS Mata Kuliah ${effectiveData.identity.namaMK}`, { size: 24, spacing: 0 }),
+          para("Semester Genap TA. 2025/2026", { size: 24, spacing: 0 }),
+          spacer(),
+          spacer(),
+          spacer(),
+          spacer(),
+          spacer(),
+          spacer(),
+          para("RENCANA PEMBELAJARAN SEMESTER (RPS)", {
+            bold: true,
+            size: 28,
+            align: AlignmentType.CENTER,
+          }),
+          spacer(),
+          ...(coverLogo ? [coverLogo] : []),
+          spacer(),
+          spacer(),
+          spacer(),
+          para(`MATA KULIAH ${(effectiveData.identity.namaMK || "-").toUpperCase()}`, {
+            bold: true,
+            size: 32,
+            align: AlignmentType.CENTER,
+            spacing: 0,
+          }),
+          para(`(${effectiveData.identity.bobotSKS || "-"} SKS)`, {
+            bold: true,
+            size: 26,
+            align: AlignmentType.CENTER,
+            spacing: 0,
+          }),
+          spacer(),
+          spacer(),
+          spacer(),
+          spacer(),
+          spacer(),
+          spacer(),
+          para(effectiveData.identity.prodi, { bold: true, size: 26, align: AlignmentType.CENTER, spacing: 0 }),
+          para(effectiveData.identity.fakultas, { bold: true, size: 26, align: AlignmentType.CENTER, spacing: 0 }),
+          para(effectiveData.identity.universitas, { bold: true, size: 26, align: AlignmentType.CENTER, spacing: 0 }),
+          spacer(),
+          para(coverYear, { bold: true, size: 26, align: AlignmentType.CENTER, spacing: 0 }),
+        ],
+      },
+      {
+        properties: { page: { size: A4, margin: MARGIN } },
+        children: sectionACore(effectiveData),
+      },
+      {
+        properties: {
+          page: {
+            size: { ...A4, orientation: PageOrientation.LANDSCAPE },
+            margin: MARGIN,
+          },
+        },
+        children: weeklySection(effectiveData),
+      },
+      {
+        properties: { page: { size: A4, margin: MARGIN } },
+        children: tasksSection(effectiveData),
+      },
+      {
+        properties: { page: { size: A4, margin: MARGIN } },
+        children: finalAssessmentSection(effectiveData),
+      },
+      {
+        properties: { page: { size: A4, margin: MARGIN } },
+        children: rubricSection(effectiveData),
+      },
+    ],
+  });
+
+  return Packer.toBlob(doc);
+}
+
+export async function downloadRpsDocx(data: RpsData) {
+  const blob = await buildRpsDocx(data);
+  const name = `RPS_${data.identity.kodeMK || "MK"}_${data.identity.namaMK || "Mata Kuliah"}`
+    .replace(/[^\w\-]+/g, "_")
+    .slice(0, 80);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${name}.docx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

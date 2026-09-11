@@ -1,0 +1,541 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root and .dark blocks define the actual color values using oklch.
+ * All colors MUST use oklch format.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.129 0.042 264.695);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.129 0.042 264.695);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.129 0.042 264.695);
+  --primary: oklch(0.208 0.042 265.755);
+  --primary-foreground: oklch(0.984 0.003 247.858);
+  --secondary: oklch(0.968 0.007 247.896);
+  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --muted: oklch(0.968 0.007 247.896);
+  --muted-foreground: oklch(0.554 0.046 257.417);
+  --accent: oklch(0.968 0.007 247.896);
+  --accent-foreground: oklch(0.208 0.042 265.755);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(0.929 0.013 255.508);
+  --input: oklch(0.929 0.013 255.508);
+  --ring: oklch(0.704 0.04 256.788);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.984 0.003 247.858);
+  --sidebar-foreground: oklch(0.129 0.042 264.695);
+  --sidebar-primary: oklch(0.208 0.042 265.755);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.968 0.007 247.896);
+  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
+  --sidebar-border: oklch(0.929 0.013 255.508);
+  --sidebar-ring: oklch(0.704 0.04 256.788);
+}
+
+.dark {
+  --background: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.984 0.003 247.858);
+  --card: oklch(0.208 0.042 265.755);
+  --card-foreground: oklch(0.984 0.003 247.858);
+  --popover: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.929 0.013 255.508);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: oklch(0.279 0.041 260.031);
+  --secondary-foreground: oklch(0.984 0.003 247.858);
+  --muted: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.04 256.788);
+  --accent: oklch(0.279 0.041 260.031);
+  --accent-foreground: oklch(0.984 0.003 247.858);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.551 0.027 264.364);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.551 0.027 264.364);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+/* ============================================================
+   Dokumen RPS — template cetak tunggal (pratinjau + PDF)
+   ============================================================ */
+
+.rps-doc {
+  --doc-ink: #000000;
+  --doc-line: #000000;
+  --doc-head: #e2f0d9;
+  font-family: "Times New Roman", Times, serif;
+  color: var(--doc-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.rps-page {
+  background: #ffffff;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 18mm 16mm;
+  box-shadow: 0 1px 12px rgb(15 23 42 / 12%);
+  box-sizing: border-box;
+}
+
+.rps-page-landscape {
+  width: 297mm;
+  min-height: 210mm;
+  padding: 14mm 18mm;
+}
+
+.rps-cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  position: relative;
+  padding: 60mm 18mm 34mm;
+}
+
+.rps-cover-note {
+  position: absolute;
+  top: 18mm;
+  left: 18mm;
+  text-align: left;
+  font-size: 11pt;
+  line-height: 1.35;
+}
+
+.rps-cover-title {
+  font-size: 20pt;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.rps-cover-logo {
+  width: 54mm;
+  height: 54mm;
+  object-fit: contain;
+}
+
+.rps-cover-mk {
+  font-size: 16pt;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.rps-cover-foot {
+  font-size: 13pt;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.rps-cover-year { margin-top: 7mm; }
+
+.rps-logo-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #94a3b8;
+  color: #94a3b8;
+  font-family: system-ui, sans-serif;
+  font-size: 8pt;
+  border-radius: 4px;
+}
+
+.rps-kop {
+  display: grid;
+  grid-template-columns: 25mm 1fr;
+  grid-template-rows: repeat(3, 1fr);
+  border: 1px solid var(--doc-line);
+  border-bottom: 0;
+}
+
+.rps-logo {
+  grid-row: 1 / 4;
+  width: 25mm;
+  height: 23mm;
+  object-fit: contain;
+  padding: 1mm;
+  box-sizing: border-box;
+  border-right: 1px solid var(--doc-line);
+}
+
+.rps-kop-text {
+  display: contents;
+  text-align: left;
+  font-weight: 700;
+  font-size: 10.5pt;
+}
+
+.rps-kop-text > div {
+  display: flex;
+  align-items: center;
+  padding: 0 1.5mm;
+  border-bottom: 1px solid var(--doc-line);
+}
+
+.rps-kop-text > div:last-child { border-bottom: 0; }
+
+.rps-kop-univ {
+  font-size: 10.5pt;
+}
+
+.rps-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin-bottom: 0;
+  table-layout: fixed;
+}
+
+.rps-table th,
+.rps-table td {
+  border: 1px solid var(--doc-line);
+  padding: 0.8mm 1mm;
+  vertical-align: top;
+  text-align: left;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.rps-table th {
+  background: #ffffff;
+  font-weight: 700;
+}
+
+/* Baris kepala tabel (Bagian A mingguan, B, C, D) berlatar hijau muda
+   seperti template UNBL. */
+.rps-table thead th,
+.rps-shaded-head thead th {
+  background: var(--doc-head);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.rps-matrix th {
+  text-align: center;
+}
+
+.rps-subcpmk td:first-child {
+  width: 28mm;
+}
+
+.rps-matrix td:first-child,
+.rps-matrix th:first-child {
+  width: 34mm;
+}
+
+.rps-matrix th:first-child {
+  text-align: left;
+}
+
+/* Daftar centang di dalam sel (Bentuk & Metode, Media, Teknik & Kriteria) */
+.rps-checklist {
+  display: flex;
+  flex-direction: column;
+}
+
+.rps-checklist-title {
+  text-align: center;
+  font-weight: 700;
+  padding: 0.3mm 0;
+}
+
+.rps-checklist-row {
+  display: grid;
+  grid-template-columns: 3.4mm 1fr;
+  align-items: stretch;
+}
+
+.rps-checklist-mark {
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.rps-checklist-box {
+  border: 1px solid var(--doc-line);
+  padding: 0 0.6mm;
+  line-height: 1.25;
+}
+
+.rps-section-head-left {
+  text-align: left !important;
+}
+
+.rps-section-head,
+.rps-section-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: 11pt;
+  margin: 0;
+  padding: 0.4mm 1mm;
+  background: var(--doc-head);
+  border: 1px solid var(--doc-line);
+}
+
+.rps-table .rps-section-head { background: var(--doc-head); }
+
+.rps-subtitle {
+  text-align: center;
+  font-weight: 700;
+  font-size: 10pt;
+  margin-bottom: 2mm;
+}
+
+.rps-center {
+  text-align: center;
+}
+
+.rps-right {
+  text-align: right;
+}
+
+.rps-code {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rps-label {
+  width: 32%;
+}
+
+.rps-check {
+  font-size: 11pt;
+  font-weight: 700;
+}
+
+.rps-weekly,
+.rps-small {
+  font-size: 7pt;
+}
+
+.rps-weekly th { text-align: center; vertical-align: middle; }
+
+.rps-ol {
+  margin: 0;
+  padding-left: 5mm;
+  list-style: decimal;
+}
+
+.rps-pustaka-group {
+  margin-bottom: 1.5mm;
+}
+
+.rps-pustaka-label {
+  font-weight: 700;
+}
+
+.rps-p {
+  font-size: 10pt;
+  margin: 2mm 0 1.5mm;
+}
+
+.rps-note {
+  font-size: 8.5pt;
+  font-style: italic;
+  margin: 0.5mm 0;
+}
+
+.rps-notes {
+  font-size: 9pt;
+  line-height: 1.5;
+  margin-top: 3mm;
+}
+
+.rps-grade {
+  width: 60mm;
+}
+
+.rps-variant { margin-bottom: 4mm; }
+
+.rps-variant .rps-table {
+  width: 86%;
+  margin-left: 4mm;
+}
+
+.rps-col-no {
+  width: 12mm;
+}
+
+.rps-col-pct {
+  width: 24mm;
+}
+
+/* -------- Cetak / Ekspor PDF -------- */
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@page landscape {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+.rps-page-landscape {
+  page: landscape;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .rps-no-print {
+    display: none !important;
+  }
+
+  .rps-print-app,
+  .rps-print-main {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .rps-print-section {
+    background: transparent !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .rps-print-wrapper {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .rps-print-root {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .rps-doc {
+    display: block;
+    gap: 0;
+  }
+
+  .rps-page {
+    width: 100%;
+    min-height: 0;
+    padding: 0;
+    box-shadow: none;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .rps-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .rps-page-landscape {
+    width: auto;
+  }
+
+  .rps-table tr,
+  .rps-table td,
+  .rps-table th {
+    break-inside: avoid;
+  }
+
+  .rps-table thead {
+    display: table-header-group;
+  }
+}
