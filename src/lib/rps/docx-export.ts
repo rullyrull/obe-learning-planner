@@ -241,7 +241,7 @@ const check = (on: boolean) => (on ? "\u2713" : "");
 function sectionACore(data: RpsData) {
   currentWidth = LANDSCAPE_WIDTH;
   const { identity } = data;
-  const w = PORTRAIT_WIDTH;
+  const w = LANDSCAPE_WIDTH;
   const six = Array.from({ length: 6 }, () => Math.floor(w / 6));
   const children: Array<Paragraph | Table> = [...kop(data)];
 
