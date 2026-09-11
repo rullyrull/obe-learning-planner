@@ -750,7 +750,7 @@ export async function buildRpsDocx(data: RpsData): Promise<Blob> {
     });
     effectiveData = { ...data, identity: { ...data.identity, logoDataUrl } };
   }
-  const coverLogo = logoParagraph(effectiveData, 140);
+  const coverLogo = logoParagraph(effectiveData, 210);
   const coverYear = effectiveData.identity.tanggalPenyusunan.match(/\d{4}/)?.[0] ?? "";
 
   const doc = new Document({
