@@ -31,7 +31,7 @@ const LANDSCAPE_WIDTH = 13958;
 const PORTRAIT_WIDTH = 9906;
 // Lebar konten halaman yang sedang dibangun (portrait untuk bagian A/B/C/D,
 // landscape hanya untuk tabel rencana mingguan seperti template UNBL).
-let currentWidth = PORTRAIT_WIDTH;
+let currentWidth = LANDSCAPE_WIDTH;
 
 const border = { style: BorderStyle.SINGLE, size: 6, color: "000000" };
 const borders = { top: border, bottom: border, left: border, right: border };
@@ -239,7 +239,7 @@ const kop = (data: RpsData): Array<Paragraph | Table> => {
 const check = (on: boolean) => (on ? "\u2713" : "");
 
 function sectionACore(data: RpsData) {
-  currentWidth = PORTRAIT_WIDTH;
+  currentWidth = LANDSCAPE_WIDTH;
   const { identity } = data;
   const w = PORTRAIT_WIDTH;
   const six = Array.from({ length: 6 }, () => Math.floor(w / 6));
@@ -524,7 +524,7 @@ function weeklySection(data: RpsData) {
 }
 
 function tasksSection(data: RpsData) {
-  currentWidth = PORTRAIT_WIDTH;
+  currentWidth = LANDSCAPE_WIDTH;
   const widths = [1150, 2400, 2850, 3400, 2350, 1808];
   return [
     ...kop(data),
@@ -562,7 +562,7 @@ function tasksSection(data: RpsData) {
 }
 
 function finalAssessmentSection(data: RpsData) {
-  currentWidth = PORTRAIT_WIDTH;
+  currentWidth = LANDSCAPE_WIDTH;
   const children: Array<Paragraph | Table> = [
     ...kop(data),
     para("C. PENILAIAN AKHIR", { bold: true, size: 22 }),
@@ -682,7 +682,7 @@ function finalAssessmentSection(data: RpsData) {
 }
 
 function rubricSection(data: RpsData) {
-  currentWidth = PORTRAIT_WIDTH;
+  currentWidth = LANDSCAPE_WIDTH;
   const rows: TableRow[] = [
     new TableRow({
       tableHeader: true,
@@ -735,6 +735,7 @@ function rubricSection(data: RpsData) {
 }
 
 const A4 = { width: 11906, height: 16838 };
+const LANDSCAPE_A4 = { ...A4, orientation: PageOrientation.LANDSCAPE };
 const MARGIN = { top: 1000, right: 1000, bottom: 1000, left: 1000 };
 
 export async function buildRpsDocx(data: RpsData): Promise<Blob> {
@@ -792,7 +793,7 @@ export async function buildRpsDocx(data: RpsData): Promise<Blob> {
         ],
       },
       {
-        properties: { page: { size: A4, margin: MARGIN } },
+        properties: { page: { size: LANDSCAPE_A4, margin: MARGIN } },
         children: sectionACore(effectiveData),
       },
       {
@@ -805,15 +806,15 @@ export async function buildRpsDocx(data: RpsData): Promise<Blob> {
         children: weeklySection(effectiveData),
       },
       {
-        properties: { page: { size: A4, margin: MARGIN } },
+        properties: { page: { size: LANDSCAPE_A4, margin: MARGIN } },
         children: tasksSection(effectiveData),
       },
       {
-        properties: { page: { size: A4, margin: MARGIN } },
+        properties: { page: { size: LANDSCAPE_A4, margin: MARGIN } },
         children: finalAssessmentSection(effectiveData),
       },
       {
-        properties: { page: { size: A4, margin: MARGIN } },
+        properties: { page: { size: LANDSCAPE_A4, margin: MARGIN } },
         children: rubricSection(effectiveData),
       },
     ],
