@@ -5,6 +5,7 @@ import {
   HeadingLevel,
   ImageRun,
   Packer,
+  PageBreak,
   PageOrientation,
   Paragraph,
   ShadingType,
@@ -175,6 +176,7 @@ const para = (
   });
 
 const spacer = () => new Paragraph({ children: [new TextRun({ text: "", font: FONT })] });
+const pageBreak = () => new Paragraph({ children: [new PageBreak()] });
 
 const dataUrlToBytes = (dataUrl: string): { data: Uint8Array; type: "png" | "jpg" } | null => {
   const match = /^data:image\/(png|jpe?g);base64,(.+)$/i.exec(dataUrl.trim());
@@ -253,6 +255,7 @@ function sectionACore(data: RpsData) {
   const children: Array<Paragraph | Table> = [...kop(data)];
 
   children.push(
+    pageBreak(),
     table(
       [
         new TableRow({
@@ -443,7 +446,7 @@ function weeklySection(data: RpsData) {
   const widths = [800, 1750, 1250, 1550, 900, 1300, 1150, 1350, 600, 1650, 1158];
   const sum = widths.reduce((a, b) => a + b, 0);
   const dxa = (i: number) => Math.floor(((widths[i] ?? 0) / sum) * LANDSCAPE_WIDTH);
-  const rows: TableRow[] = [
+  const headerRows = (): TableRow[] => [
     new TableRow({
       tableHeader: true,
       children: [
@@ -482,7 +485,8 @@ function weeklySection(data: RpsData) {
         head("Teknik & Kriteria", { size: 16, align: AlignmentType.CENTER }),
       ],
     }),
-    ...data.weeks.map(
+  ];
+  const weekRows = data.weeks.map(
       (w) =>
         new TableRow({
           cantSplit: false,
@@ -500,19 +504,17 @@ function weeklySection(data: RpsData) {
             cell(w.pustaka, { size: 16 }),
           ],
         }),
-    ),
-  ];
+    );
   const total = data.weeks.reduce((s, w) => s + (parseFloat(w.bobot) || 0), 0);
-  rows.push(
+  const totalRow =
     new TableRow({
       children: [
         cell("Total Bobot", { span: 8, bold: true, align: AlignmentType.RIGHT, size: 16 }),
         cell(`${total}%`, { bold: true, align: AlignmentType.CENTER, size: 16 }),
         cell("", { span: 2, size: 16 }),
       ],
-    }),
-  );
-  rows.unshift(
+    });
+  const titleRow = () =>
     new TableRow({
       children: [
         head("A. RENCANA PEMBELAJARAN SEMESTER", {
@@ -521,17 +523,18 @@ function weeklySection(data: RpsData) {
           size: 22,
         }),
       ],
-    }),
-  );
-  return [...kop(data), table(rows, widths)];
+    });
+  const firstRows = [titleRow(), ...headerRows(), ...weekRows.slice(0, 15)];
+  const lastRows = [...headerRows(), ...weekRows.slice(15), totalRow];
+  return [...kop(data), table(firstRows, widths), pageBreak(), table(lastRows, widths)];
 }
 
 function tasksSection(data: RpsData) {
   currentWidth = LANDSCAPE_WIDTH;
   const widths = [1150, 2400, 2850, 3400, 2350, 1808];
-  return [
-    table(
-      [
+  const titleAndHeader = (includeTitle: boolean) => [
+    ...(includeTitle
+      ? [
         new TableRow({
           children: [
             head("B. RENCANA TUGAS MAHASISWA", {
@@ -541,7 +544,9 @@ function tasksSection(data: RpsData) {
             }),
           ],
         }),
-        new TableRow({
+      ]
+      : []),
+    new TableRow({
           tableHeader: true,
           children: [
             head("Minggu ke-", { align: AlignmentType.CENTER, size: 16 }),
@@ -551,8 +556,9 @@ function tasksSection(data: RpsData) {
             head("Luaran Tugas yang Dihasilkan", { size: 16 }),
             head("Batas Waktu", { size: 16 }),
           ],
-        }),
-        ...data.tasks.map(
+    }),
+  ];
+  const taskRows = data.tasks.map(
           (t) =>
             new TableRow({
               children: [
@@ -564,10 +570,11 @@ function tasksSection(data: RpsData) {
                 cell(t.batasWaktu, { size: 16 }),
               ],
             }),
-        ),
-      ],
-      widths,
-    ),
+        );
+  return [
+    table([...titleAndHeader(true), ...taskRows.slice(0, 8)], widths),
+    pageBreak(),
+    table([...titleAndHeader(false), ...taskRows.slice(8)], widths),
   ];
 }
 
@@ -627,6 +634,7 @@ function finalAssessmentSection(data: RpsData) {
 
   const totalAch = data.achievements.reduce((s, a) => s + (parseFloat(a.bobot) || 0), 0);
   children.push(
+    pageBreak(),
     para("2. Ketercapaian CPL pada CPMK:"),
     table(
       [
@@ -834,9 +842,9 @@ function rubricSection(data: RpsData) {
       [LANDSCAPE_WIDTH],
     ),
     table(rows, [650, 1350, 1700, 1600, 7600, 1058]),
-    spacer(),
+    pageBreak(),
     attitude,
-    spacer(),
+    pageBreak(),
     table(
       [
         new TableRow({
