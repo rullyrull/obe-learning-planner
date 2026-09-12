@@ -255,7 +255,6 @@ function sectionACore(data: RpsData) {
   const children: Array<Paragraph | Table> = [...kop(data)];
 
   children.push(
-    pageBreak(),
     table(
       [
         new TableRow({
