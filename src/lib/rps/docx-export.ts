@@ -256,7 +256,7 @@ function sectionACore(data: RpsData) {
     table(
       [
         new TableRow({
-            head("A. RENCANA PEMBELAJARAN SEMESTER", { span: 6, width: w })],
+          children: [head("A. RENCANA PEMBELAJARAN SEMESTER", { span: 6, width: w })],
         }),
         new TableRow({
           children: [
