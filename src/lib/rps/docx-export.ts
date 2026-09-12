@@ -256,7 +256,7 @@ function sectionACore(data: RpsData) {
     table(
       [
         new TableRow({
-          children: [head("A. RENCANANA PEMBELAJARAN SEMESTER", { span: 6, width: w })],
+            head("A. RENCANA PEMBELAJARAN SEMESTER", { span: 6, width: w })],
         }),
         new TableRow({
           children: [
@@ -324,7 +324,6 @@ function sectionACore(data: RpsData) {
       ],
       six,
     ),
-    spacer(),
   );
 
   const matrixWidths = (label: number) => {
@@ -355,7 +354,7 @@ function sectionACore(data: RpsData) {
       matrixWidths(3200),
     );
 
-  children.push(matrixTable("Pemetaan CPL dengan CPMK", data.cpl, data.cplCpmk), spacer());
+  children.push(matrixTable("Pemetaan CPL dengan CPMK", data.cpl, data.cplCpmk));
 
   children.push(
     table(
@@ -374,9 +373,7 @@ function sectionACore(data: RpsData) {
       ],
       [2200, LANDSCAPE_WIDTH - 2200],
     ),
-    spacer(),
     matrixTable("Korelasi CPMK terhadap Sub-CPMK", data.subCpmk, data.subCpmkCpmk),
-    spacer(),
     table(
       [
         new TableRow({
@@ -401,7 +398,6 @@ function sectionACore(data: RpsData) {
       ],
       matrixWidths(3600),
     ),
-    spacer(),
   );
 
   const pustakaText = (
@@ -519,7 +515,7 @@ function weeklySection(data: RpsData) {
   rows.unshift(
     new TableRow({
       children: [
-        head("A. RENCANANA PEMBELAJARAN SEMESTER", {
+        head("A. RENCANA PEMBELAJARAN SEMESTER", {
           span: 11,
           align: AlignmentType.CENTER,
           size: 22,
@@ -743,11 +739,118 @@ function rubricSection(data: RpsData) {
     });
   });
 
+  const attitudeRows = [
+    ["Etika Berkomunikasi", "Berkata sopan dan santun."],
+    ["", "Tidak menyela pembicaraan."],
+    ["", "Mengucapkan terima kasih setelah menerima bantuan orang lain."],
+    ["", "Bersikap ramah dan menghargai pendapat orang lain."],
+    ["Kejujuran", "Tidak menyontek dan tidak melakukan plagiarisme."],
+    ["", "Mengakui kesalahan atau kekurangan yang dimiliki."],
+    ["", "Menyusun laporan berdasarkan data dan sumber yang valid."],
+    ["Tanggung Jawab", "Melaksanakan tugas sesuai ketentuan dan tepat waktu."],
+    ["", "Menerima risiko dan konsekuensi dari tindakan yang dilakukan."],
+    ["", "Tidak menyalahkan pihak lain tanpa bukti yang akurat."],
+    ["", "Menggunakan fasilitas pembelajaran dengan baik dan mengembalikannya sesuai ketentuan."],
+  ];
+  const attitude = table(
+    [
+      new TableRow({
+        tableHeader: true,
+        children: [
+          head("No.", { align: AlignmentType.CENTER, size: 16 }),
+          head("Aspek", { align: AlignmentType.CENTER, size: 16 }),
+          head("Definisi", { align: AlignmentType.CENTER, size: 16 }),
+          head("Indikator", { align: AlignmentType.CENTER, size: 16 }),
+          head("Sub-Indikator", { align: AlignmentType.CENTER, size: 16 }),
+          ...["5", "4", "3", "2", "1"].map((n) => head(n, { align: AlignmentType.CENTER, size: 16 })),
+        ],
+      }),
+      ...attitudeRows.map(
+        ([indicator, description], index) =>
+          new TableRow({
+            children: [
+              ...(index === 0
+                ? [
+                    cell("4", { rowSpan: attitudeRows.length, align: AlignmentType.CENTER, size: 16 }),
+                    cell("Sikap", { rowSpan: attitudeRows.length, bold: true, size: 16 }),
+                    cell("Meliputi nilai sikap mahasiswa dalam berinteraksi dengan dosen, rekan mahasiswa, dan lingkungan kampus.", { rowSpan: attitudeRows.length, size: 16 }),
+                  ]
+                : []),
+              cell(indicator, { size: 16, align: AlignmentType.CENTER }),
+              cell(description, { size: 16 }),
+              ...[0, 1, 2, 3, 4].map(() => cell("", { size: 16 })),
+            ],
+          }),
+      ),
+    ],
+    [650, 1300, 1900, 1550, 4500, 700, 700, 700, 700, 700],
+  );
+
+  const projectRows = [
+    ["Perencanaan Proyek", "Kemampuan mahasiswa merancang analisis laporan keuangan perusahaan secara sistematis", "Kejelasan tujuan analisis, ruang lingkup, dan sistematika analisis", "Tujuan sangat jelas, relevan dengan CPMK, dan perencanaan analisis sangat sistematis"],
+    ["Berpikir Kritis dan Analitis", "Kemampuan mahasiswa menganalisis laporan keuangan menggunakan data dan metode analisis yang tepat", "Analisis berbasis data laporan keuangan dan metode analisis rasio", "Analisis sangat mendalam, logis, sistematis, dan berbasis data yang akurat"],
+    ["Ketepatan Analisis Laporan Keuangan", "Ketepatan mahasiswa dalam melakukan perhitungan dan analisis laporan keuangan", "Akurasi perhitungan rasio dan analisis laporan keuangan", "Perhitungan dan analisis sangat tepat tanpa kesalahan"],
+    ["Kualitas Rekomendasi Keputusan", "Kemampuan mahasiswa memberikan rekomendasi keputusan bisnis berdasarkan hasil analisis laporan keuangan", "Relevansi dan kelayakan rekomendasi bisnis", "Rekomendasi sangat aplikatif, realistis, dan berbasis data"],
+    ["Kolaborasi Tim dan Presentasi", "Kemampuan mahasiswa bekerja sama dalam tim serta menyajikan hasil analisis secara jelas", "Koordinasi tim dan kualitas presentasi hasil proyek", "Kolaborasi tim sangat baik dan presentasi sangat jelas serta sistematis"],
+  ];
+  const projectScores = ["81–100", "61–80", "41–60", "0–40"];
+  const projectTableRows: TableRow[] = [
+    new TableRow({
+      tableHeader: true,
+      children: ["No.", "Aspek", "Definisi", "Indikator", "Rubrik", "Skor"].map((v) =>
+        head(v, { align: AlignmentType.CENTER, size: 16 }),
+      ),
+    }),
+  ];
+  projectRows.forEach((r, i) => {
+    projectScores.forEach((score, j) => {
+      const rubric = j === 0 ? r[3] : j === 1 ? "Cukup baik namun belum mendalam" : j === 2 ? "Masih kurang konsisten" : "Tidak menunjukkan kemampuan yang dinilai";
+      projectTableRows.push(
+        new TableRow({
+          children: [
+            ...(j === 0
+              ? [
+                  cell(String(i + 1), { rowSpan: 4, align: AlignmentType.CENTER, size: 16 }),
+                  cell(r[0] ?? "", { rowSpan: 4, bold: true, size: 16 }),
+                  cell(r[1] ?? "", { rowSpan: 4, size: 16 }),
+                  cell(r[2] ?? "", { rowSpan: 4, size: 16 }),
+                ]
+              : []),
+            cell(rubric ?? "", { size: 16 }),
+            cell(score, { align: AlignmentType.CENTER, size: 16 }),
+          ],
+        }),
+      );
+    });
+  });
+
   return [
-    ...kop(data),
-    para("D. PENILAIAN TUGAS", { bold: true, size: 22 }),
-    para(data.rubricTitle, { bold: true }),
-    table(rows, [600, 1500, 2000, 1800, 2200, 926]),
+    table(
+      [new TableRow({ children: [head("D. PENILAIAN TUGAS", { align: AlignmentType.CENTER, size: 20 })] })],
+      [LANDSCAPE_WIDTH],
+    ),
+    table(
+      [new TableRow({ children: [head(data.rubricTitle, { align: AlignmentType.CENTER, size: 20 })] })],
+      [LANDSCAPE_WIDTH],
+    ),
+    table(rows, [650, 1350, 1700, 1600, 7600, 1058]),
+    spacer(),
+    attitude,
+    spacer(),
+    table(
+      [
+        new TableRow({
+          children: [
+            head("INSTRUMEN DAN RUBRIK PENILAIAN TUGAS AKTIVITAS PARTISIPATIF DAN HASIL PROYEK", {
+              align: AlignmentType.CENTER,
+              size: 20,
+            }),
+          ],
+        }),
+      ],
+      [LANDSCAPE_WIDTH],
+    ),
+    table(projectTableRows, [650, 1350, 1700, 1600, 7600, 1058]),
     spacer(),
     para("Keterangan :", { bold: true }),
     ...data.rubricNotes.map((n) => para(n, { size: 18, spacing: 20 })),
