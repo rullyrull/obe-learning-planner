@@ -776,8 +776,8 @@ function rubricSection(data: RpsData) {
                     cell("Meliputi nilai sikap mahasiswa dalam berinteraksi dengan dosen, rekan mahasiswa, dan lingkungan kampus.", { rowSpan: attitudeRows.length, size: 16 }),
                   ]
                 : []),
-              cell(indicator, { size: 16, align: AlignmentType.CENTER }),
-              cell(description, { size: 16 }),
+              cell(indicator ?? "", { size: 16, align: AlignmentType.CENTER }),
+              cell(description ?? "", { size: 16 }),
               ...[0, 1, 2, 3, 4].map(() => cell("", { size: 16 })),
             ],
           }),
