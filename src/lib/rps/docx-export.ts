@@ -255,6 +255,7 @@ function sectionACore(data: RpsData) {
   const children: Array<Paragraph | Table> = [...kop(data)];
 
   children.push(
+    pageBreak(),
     table(
       [
         new TableRow({
@@ -841,7 +842,6 @@ function rubricSection(data: RpsData) {
       [LANDSCAPE_WIDTH],
     ),
     table(rows, [650, 1350, 1700, 1600, 7600, 1058]),
-    pageBreak(),
     attitude,
     pageBreak(),
     table(
