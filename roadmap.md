@@ -18,4 +18,4 @@
 - [x] Periksa & samakan halaman lanjutan (Bagian A, mingguan, B, C, D) dengan template
 
 - [x] Verifikasi visual hasil Word (kover, Bagian A/mingguan, B, C, D, rubrik) + rapikan mingguan agar tidak 1 minggu per halaman
-- [ ] Samakan ekspor Word secara presisi dengan template referensi (struktur tabel, merge sel, ukuran, dan pembagian halaman)
+- [x] Samakan ekspor Word secara presisi dengan template referensi (struktur tabel, merge sel, ukuran, dan pembagian halaman)
