@@ -45,6 +45,7 @@ type CellOpts = {
   align?: (typeof AlignmentType)[keyof typeof AlignmentType];
   shade?: boolean;
   size?: number;
+  margins?: number;
 };
 
 const lines = (text: string, opts: CellOpts) =>
@@ -54,7 +55,7 @@ const lines = (text: string, opts: CellOpts) =>
       (line) =>
         new Paragraph({
           alignment: opts.align ?? AlignmentType.LEFT,
-          spacing: { before: 20, after: 20 },
+          spacing: { before: 0, after: 0, line: 180 },
           children: [
             new TextRun({ text: line, bold: opts.bold ?? false, font: FONT, size: opts.size ?? 18 }),
           ],
@@ -68,7 +69,12 @@ const cell = (text: string, opts: CellOpts = {}) =>
     ...(opts.rowSpan ? { rowSpan: opts.rowSpan } : {}),
 
     verticalAlign: VerticalAlign.CENTER,
-    margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    margins: {
+      top: opts.margins ?? 24,
+      bottom: opts.margins ?? 24,
+      left: opts.margins ?? 48,
+      right: opts.margins ?? 48,
+    },
     ...(opts.width ? { width: { size: opts.width, type: WidthType.DXA } } : {}),
     ...(opts.shade
       ? { shading: { fill: "E2F0D9", type: ShadingType.CLEAR, color: "auto" } }
@@ -528,10 +534,17 @@ function tasksSection(data: RpsData) {
   currentWidth = LANDSCAPE_WIDTH;
   const widths = [1150, 2400, 2850, 3400, 2350, 1808];
   return [
-    ...kop(data),
-    para("B. RENCANANA TUGAS MAHASISWA", { bold: true, size: 22 }),
     table(
       [
+        new TableRow({
+          children: [
+            head("B. RENCANA TUGAS MAHASISWA", {
+              span: 6,
+              align: AlignmentType.CENTER,
+              size: 20,
+            }),
+          ],
+        }),
         new TableRow({
           tableHeader: true,
           children: [
@@ -565,8 +578,14 @@ function tasksSection(data: RpsData) {
 function finalAssessmentSection(data: RpsData) {
   currentWidth = LANDSCAPE_WIDTH;
   const children: Array<Paragraph | Table> = [
-    ...kop(data),
-    para("C. PENILAIAN AKHIR", { bold: true, size: 22 }),
+    table(
+      [
+        new TableRow({
+          children: [head("C. PENILAIAN AKHIR", { align: AlignmentType.CENTER, size: 20 })],
+        }),
+      ],
+      [LANDSCAPE_WIDTH],
+    ),
     para("1. Persentase penilaian mata kuliah mahasiswa mengacu pada CPMK sebagai berikut:"),
   ];
 
